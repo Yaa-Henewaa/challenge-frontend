@@ -5,6 +5,9 @@ import Index from "./pages/Index";
 import Headphones from "./pages/Headphones";
 import Speakers from "./pages/Speakers";
 import Earphones from "./pages/Earphones";
+import Checkout from "./pages/Checkout";
+import OrderConfirmation from "./pages/OrderConfirmation";
+import ProductDetail from "./pages/ProductDetail";
 import NotFound from "./pages/NotFound";
 import "./App.css";
 
@@ -19,6 +22,9 @@ function App() {
             <Route path="/headphones" element={<Headphones />} />
             <Route path="/speakers" element={<Speakers />} />
             <Route path="/earphones" element={<Earphones />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/order-confirmation" element={<OrderConfirmation />} />
+            <Route path="/:category/:productId" element={<ProductDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
