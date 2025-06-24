@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
@@ -45,6 +45,8 @@ const Cart = ({ isOpen, onClose }: CartProps) => {
     },
   ]);
 
+  const navigate = useNavigate();
+
   const updateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity === 0) {
       setCartItems(cartItems.filter((item) => item.id !== id));
@@ -65,6 +67,11 @@ const Cart = ({ isOpen, onClose }: CartProps) => {
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
+
+  const handleCheckout = () => {
+    onClose(); // Close the cart
+    navigate("/checkout"); // Navigate to checkout
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -141,8 +148,8 @@ const Cart = ({ isOpen, onClose }: CartProps) => {
               </div>
 
               {/* Checkout Button */}
-              <Button asChild className="w-full" size="lg">
-                <Link to="/checkout">CHECKOUT</Link>
+              <Button className="w-full" size="lg" onClick={handleCheckout}>
+                CHECKOUT
               </Button>
             </div>
           )}
