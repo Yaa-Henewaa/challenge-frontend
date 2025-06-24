@@ -1,13 +1,12 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, ShoppingCart, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { useCart } from "../contexts/CartContext";
 import Cart from "./Cart";
 
 const Header = () => {
-  const [cartItems] = useState(0);
-   const [isCartOpen, setIsCartOpen] = useState(false)
+  const { state, toggleCart, getTotalItems } = useCart();
 
   const navLinks = [
     { name: "HOME", href: "/" },
@@ -53,7 +52,7 @@ const Header = () => {
               height="25"
               viewBox="0 0 143 25"
               fill="none"
-              xmlns=""
+              xmlns="http://www.w3.org/2000/svg"
             >
 
  
@@ -73,23 +72,23 @@ const Header = () => {
             ))}
           </nav>
 
-           {/* Cart */}
+          {/* Cart */}
           <Button
             variant="ghost"
             size="icon"
             className="relative text-white hover:text-brand-orange"
-            onClick={() => setIsCartOpen(true)}
+            onClick={toggleCart}
           >
             <ShoppingCart className="h-6 w-6" />
-            {cartItems > 0 && (
+            {getTotalItems() > 0 && (
               <span className="absolute -top-1 -right-1 bg-brand-orange text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {cartItems}
+                {getTotalItems()}
               </span>
             )}
           </Button>
 
           {/* Cart Modal */}
-          <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+          <Cart />
         </div>
       </div>
     </header>

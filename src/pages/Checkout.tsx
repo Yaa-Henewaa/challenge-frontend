@@ -12,52 +12,111 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import { useCart } from "../contexts/CartContext";
+import OrderConfirmationModal from "../components/OrderConfirmationModal";
+
+interface FormData {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  zip: string;
+  city: string;
+  country: string;
+  eMoneyNumber: string;
+  eMoneyPin: string;
+}
+
+interface FormErrors {
+  [key: string]: string;
+}
 
 const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState("e-money");
-  const navigate = useNavigate();
+  const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
+  const [formData, setFormData] = useState<FormData>({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    zip: "",
+    city: "",
+    country: "",
+    eMoneyNumber: "",
+    eMoneyPin: "",
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const { state, getSubtotal, getShipping, getVAT, getTotal, clearCart } =
+    useCart();
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    // Required fields validation
+    if (!formData.name.trim()) newErrors.name = "Name is required";
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email is invalid";
+    }
+    if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
+    if (!formData.address.trim()) newErrors.address = "Address is required";
+    if (!formData.zip.trim()) newErrors.zip = "ZIP code is required";
+    if (!formData.city.trim()) newErrors.city = "City is required";
+    if (!formData.country.trim()) newErrors.country = "Country is required";
+
+    // Payment method specific validation
+    if (paymentMethod === "e-money") {
+      if (!formData.eMoneyNumber.trim()) {
+        newErrors.eMoneyNumber = "e-Money number is required";
+      }
+      if (!formData.eMoneyPin.trim()) {
+        newErrors.eMoneyPin = "e-Money PIN is required";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would process the payment here
-    navigate("/order-confirmation");
+
+    if (state.items.length === 0) {
+      alert("Your cart is empty");
+      return;
+    }
+
+    if (validateForm()) {
+      setShowOrderConfirmation(true);
+    }
   };
 
-  // Sample cart items from the summary
-  const cartItems = [
-    {
-      id: "1",
-      name: "XX99 MK II",
-      price: 2999,
-      quantity: 1,
-      image:
-        "https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=100",
-    },
-    {
-      id: "2",
-      name: "XX59",
-      price: 899,
-      quantity: 2,
-      image:
-        "https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=100",
-    },
-    {
-      id: "3",
-      name: "YX1",
-      price: 599,
-      quantity: 1,
-      image:
-        "https://images.pexels.com/photos/3394651/pexels-photo-3394651.jpeg?auto=compress&cs=tinysrgb&w=100",
-    },
-  ];
-
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
-  const shipping = 50;
-  const vat = 1079;
-  const grandTotal = subtotal + shipping;
+  // Redirect if cart is empty
+  if (state.items.length === 0) {
+    return (
+      <div className="min-h-screen bg-brand-gray flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-h2 font-bold uppercase mb-4">Cart is Empty</h1>
+          <p className="text-body text-muted-foreground mb-8">
+            Add some products to your cart before checkout.
+          </p>
+          <Button asChild>
+            <Link to="/">Continue Shopping</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-brand-gray py-8 lg:py-16">
@@ -91,8 +150,17 @@ const Checkout = () => {
                       <Input
                         id="name"
                         placeholder="Alexei Ward"
-                        className="mt-2"
+                        className={`mt-2 ${errors.name ? "border-red-500" : ""}`}
+                        value={formData.name}
+                        onChange={(e) =>
+                          handleInputChange("name", e.target.value)
+                        }
                       />
+                      {errors.name && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.name}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label
@@ -105,8 +173,17 @@ const Checkout = () => {
                         id="email"
                         type="email"
                         placeholder="alexei@mail.com"
-                        className="mt-2"
+                        className={`mt-2 ${errors.email ? "border-red-500" : ""}`}
+                        value={formData.email}
+                        onChange={(e) =>
+                          handleInputChange("email", e.target.value)
+                        }
                       />
+                      {errors.email && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.email}
+                        </p>
+                      )}
                     </div>
                     <div className="md:col-span-2">
                       <Label
@@ -118,8 +195,17 @@ const Checkout = () => {
                       <Input
                         id="phone"
                         placeholder="+1 202-555-0136"
-                        className="mt-2"
+                        className={`mt-2 ${errors.phone ? "border-red-500" : ""}`}
+                        value={formData.phone}
+                        onChange={(e) =>
+                          handleInputChange("phone", e.target.value)
+                        }
                       />
+                      {errors.phone && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.phone}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -140,14 +226,36 @@ const Checkout = () => {
                       <Input
                         id="address"
                         placeholder="1137 Williams Avenue"
-                        className="mt-2"
+                        className={`mt-2 ${errors.address ? "border-red-500" : ""}`}
+                        value={formData.address}
+                        onChange={(e) =>
+                          handleInputChange("address", e.target.value)
+                        }
                       />
+                      {errors.address && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.address}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="zip" className="text-subtitle font-bold">
                         ZIP Code
                       </Label>
-                      <Input id="zip" placeholder="10001" className="mt-2" />
+                      <Input
+                        id="zip"
+                        placeholder="10001"
+                        className={`mt-2 ${errors.zip ? "border-red-500" : ""}`}
+                        value={formData.zip}
+                        onChange={(e) =>
+                          handleInputChange("zip", e.target.value)
+                        }
+                      />
+                      {errors.zip && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.zip}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="city" className="text-subtitle font-bold">
@@ -156,8 +264,17 @@ const Checkout = () => {
                       <Input
                         id="city"
                         placeholder="New York"
-                        className="mt-2"
+                        className={`mt-2 ${errors.city ? "border-red-500" : ""}`}
+                        value={formData.city}
+                        onChange={(e) =>
+                          handleInputChange("city", e.target.value)
+                        }
                       />
+                      {errors.city && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.city}
+                        </p>
+                      )}
                     </div>
                     <div className="md:col-span-2">
                       <Label
@@ -166,9 +283,16 @@ const Checkout = () => {
                       >
                         Country
                       </Label>
-                      <Select>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="United States" />
+                      <Select
+                        value={formData.country}
+                        onValueChange={(value) =>
+                          handleInputChange("country", value)
+                        }
+                      >
+                        <SelectTrigger
+                          className={`mt-2 ${errors.country ? "border-red-500" : ""}`}
+                        >
+                          <SelectValue placeholder="Select Country" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="us">United States</SelectItem>
@@ -176,6 +300,11 @@ const Checkout = () => {
                           <SelectItem value="uk">United Kingdom</SelectItem>
                         </SelectContent>
                       </Select>
+                      {errors.country && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.country}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -228,8 +357,17 @@ const Checkout = () => {
                           <Input
                             id="e-money-number"
                             placeholder="238521993"
-                            className="mt-2"
+                            className={`mt-2 ${errors.eMoneyNumber ? "border-red-500" : ""}`}
+                            value={formData.eMoneyNumber}
+                            onChange={(e) =>
+                              handleInputChange("eMoneyNumber", e.target.value)
+                            }
                           />
+                          {errors.eMoneyNumber && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {errors.eMoneyNumber}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <Label
@@ -241,8 +379,17 @@ const Checkout = () => {
                           <Input
                             id="e-money-pin"
                             placeholder="6891"
-                            className="mt-2"
+                            className={`mt-2 ${errors.eMoneyPin ? "border-red-500" : ""}`}
+                            value={formData.eMoneyPin}
+                            onChange={(e) =>
+                              handleInputChange("eMoneyPin", e.target.value)
+                            }
                           />
+                          {errors.eMoneyPin && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {errors.eMoneyPin}
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -270,7 +417,7 @@ const Checkout = () => {
 
               {/* Cart Items */}
               <div className="space-y-6 mb-8">
-                {cartItems.map((item) => (
+                {state.items.map((item) => (
                   <div key={item.id} className="flex items-center gap-4">
                     <img
                       src={item.image}
@@ -295,23 +442,23 @@ const Checkout = () => {
                 <div className="flex justify-between">
                   <span className="text-body uppercase">Total</span>
                   <span className="text-h6 font-bold">
-                    $ {subtotal.toLocaleString()}
+                    $ {getSubtotal().toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-body uppercase">Shipping</span>
-                  <span className="text-h6 font-bold">$ {shipping}</span>
+                  <span className="text-h6 font-bold">$ {getShipping()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-body uppercase">VAT (Included)</span>
                   <span className="text-h6 font-bold">
-                    $ {vat.toLocaleString()}
+                    $ {getVAT().toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between pt-2 border-t">
                   <span className="text-body uppercase">Grand Total</span>
                   <span className="text-h6 font-bold text-brand-orange">
-                    $ {grandTotal.toLocaleString()}
+                    $ {getTotal().toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -327,6 +474,15 @@ const Checkout = () => {
           </div>
         </div>
       </div>
+
+      {/* Order Confirmation Modal */}
+      <OrderConfirmationModal
+        isOpen={showOrderConfirmation}
+        onClose={() => {
+          setShowOrderConfirmation(false);
+          clearCart();
+        }}
+      />
     </div>
   );
 };
